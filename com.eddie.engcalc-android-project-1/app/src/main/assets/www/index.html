@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ماشین‌حساب مهندسی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #15181a;
+    --panel: #1d2124;
+    --grid-line: #2a3034;
+    --amber: #d98e2e;
+    --amber-dim: #a66c22;
+    --blue: #4f8aad;
+    --text: #e9e6df;
+    --text-dim: #8b9196;
+    --key-bg: #22262a;
+    --key-bg-hover: #2b3034;
+    --op-bg: #2a3238;
+    color-scheme: dark;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #15181a;
+      --panel: #1d2124;
+      --text: #e9e6df;
+    }
+  }
+  * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    background: var(--bg);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: center;
+    color: var(--text);
+    font-family: 'Vazirmatn', 'IBM Plex Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+  }
+  .calc {
+    width: 100%;
+    max-width: 520px;
+    margin: 20px 16px;
+    background: var(--panel);
+    border: 1px solid var(--grid-line);
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    position: relative;
+  }
+  .calc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--grid-line);
+  }
+  .calc-head h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    margin: 0;
+    font-weight: 500;
+  }
+  .mode-toggle {
+    display: flex;
+    gap: 6px;
+  }
+  .mode-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid var(--grid-line);
+    color: var(--text-dim);
+    padding: 4px 9px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .mode-btn.active {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  .lang-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .lang-btn {
+    flex: 1;
+    font-family: 'Vazirmatn', 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid var(--grid-line);
+    color: var(--text-dim);
+    padding: 5px 0;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .lang-btn.active {
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+  .display {
+    font-family: 'IBM Plex Mono', monospace;
+    background: #101213;
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    padding: 18px 14px 14px;
+    margin-bottom: 14px;
+    text-align: left;
+    direction: ltr;
+    overflow: hidden;
+  }
+  .display .expr {
+    min-height: 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .display .expr::-webkit-scrollbar { display: none; }
+  .display .result {
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--amber);
+    white-space: nowrap;
+    overflow-x: auto;
+    margin-top: 4px;
+    scrollbar-width: none;
+    cursor: pointer;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .display .result::-webkit-scrollbar { display: none; }
+  .flags {
+    font-size: 10px;
+    color: var(--blue);
+    letter-spacing: 0.06em;
+    margin-top: 6px;
+    min-height: 12px;
+  }
+  .pad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 9px;
+  }
+  .key-wrap {
+    min-width: 0;
+  }
+  button.key {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    background: var(--key-bg);
+    color: var(--text);
+    border: 1px solid var(--grid-line);
+    border-radius: 5px;
+    padding: 16px 4px;
+    cursor: pointer;
+    transition: background 0.08s ease, transform 0.04s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button.key:active {
+    transform: scale(0.96);
+  }
+  button.key:hover {
+    background: var(--key-bg-hover);
+  }
+  button.key.op {
+    background: var(--op-bg);
+    color: var(--blue);
+  }
+  button.key.fn {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  button.key.eq {
+    background: var(--amber-dim);
+    color: #15181a;
+    font-weight: 700;
+  }
+  button.key.eq:hover {
+    background: var(--amber);
+  }
+  button.key.wide {
+    grid-column: span 2;
+  }
+  .legend {
+    margin-top: 12px;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    letter-spacing: 0.03em;
+  }
+  .key-wrap {
+    position: relative;
+  }
+  .tip {
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: #0d0f10;
+    color: var(--text);
+    border: 1px solid var(--amber-dim);
+    font-family: 'Vazirmatn', 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    line-height: 1.5;
+    padding: 6px 9px;
+    border-radius: 4px;
+    white-space: normal;
+    width: max-content;
+    max-width: 150px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    z-index: 5;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  }
+  .tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--amber-dim);
+  }
+  .tip.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .copy-toast {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    background: var(--amber);
+    color: #15181a;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 20;
+  }
+  .copy-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+<div class="calc">
+  <div class="calc-head">
+    <h1 id="appTitle">ماشین‌حساب مهندسی</h1>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="degBtn" onclick="setMode('deg')">DEG</button>
+      <button class="mode-btn" id="radBtn" onclick="setMode('rad')">RAD</button>
+    </div>
+  </div>
+  <div class="lang-row" id="langRow">
+    <button class="lang-btn" data-l="fa" onclick="setLang('fa')">فا</button>
+    <button class="lang-btn" data-l="ar" onclick="setLang('ar')">عربي</button>
+    <button class="lang-btn" data-l="en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" data-l="ru" onclick="setLang('ru')">RU</button>
+  </div>
+
+  <div class="display">
+    <div class="expr" id="expr">&nbsp;</div>
+    <div class="result" id="result" onclick="copyResult()">0</div>
+    <div class="flags" id="flags">&nbsp;</div>
+  </div>
+
+  <div class="pad" id="pad"></div>
+
+  <div class="legend" id="legendText">Inv برای معکوس توابع مثلثاتی و توان</div>
+</div>
+
+<script>
+let expr = "";
+let mode = "deg";
+let inv = false;
+let memory = 0;
+
+const exprEl = document.getElementById('expr');
+const resultEl = document.getElementById('result');
+const flagsEl = document.getElementById('flags');
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('degBtn').classList.toggle('active', m === 'deg');
+  document.getElementById('radBtn').classList.toggle('active', m === 'rad');
+  updateFlags();
+}
+
+function updateFlags() {
+  let f = [];
+  if (inv) f.push('INV');
+  if (memory !== 0) f.push('M=' + trimNum(memory));
+  flagsEl.textContent = f.length ? f.join('   ·   ') : '\u00a0';
+}
+
+function trimNum(n) {
+  if (!isFinite(n)) return n > 0 ? '∞' : '-∞';
+  if (Number.isNaN(n)) return t('error');
+  let s = n.toPrecision(10);
+  if (s.includes('.')) s = s.replace(/0+$/,'').replace(/\.$/,'');
+  return s;
+}
+
+function toRadIfNeeded(x) {
+  return mode === 'deg' ? x * Math.PI / 180 : x;
+}
+function fromRadIfNeeded(x) {
+  return mode === 'deg' ? x * 180 / Math.PI : x;
+}
+
+function applyFn(name) {
+  try {
+    const current = evaluate(expr || "0");
+    let val;
+    switch(name) {
+      case 'sin': val = inv ? fromRadIfNeeded(Math.asin(current)) : Math.sin(toRadIfNeeded(current)); break;
+      case 'cos': val = inv ? fromRadIfNeeded(Math.acos(current)) : Math.cos(toRadIfNeeded(current)); break;
+      case 'tan': val = inv ? fromRadIfNeeded(Math.atan(current)) : Math.tan(toRadIfNeeded(current)); break;
+      case 'ln': val = inv ? Math.exp(current) : Math.log(current); break;
+      case 'log': val = inv ? Math.pow(10, current) : Math.log10(current); break;
+      case 'sqrt': val = inv ? current * current : Math.sqrt(current); break;
+      case 'inv1x': val = 1 / current; break;
+      case 'fact': val = factorial(current); break;
+    }
+    expr = trimNum(val);
+    render();
+  } catch(e) {
+    showError();
+  }
+}
+
+function factorial(n) {
+  n = Math.round(n);
+  if (n < 0) return NaN;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+
+function evaluate(e) {
+  let safe = e
+    .replace(/×/g, '*')
+    .replace(/÷/g, '/')
+    .replace(/π/g, '(' + Math.PI + ')')
+    .replace(/\be\b/g, '(' + Math.E + ')')
+    .replace(/\^/g, '**')
+    .replace(/%/g, '/100');
+  // eslint-disable-next-line no-new-func
+  const val = Function('"use strict"; return (' + safe + ')')();
+  if (typeof val !== 'number' || Number.isNaN(val)) throw new Error('bad');
+  return val;
+}
+
+function render() {
+  exprEl.textContent = expr || '\u00a0';
+  try {
+    if (expr.trim() === '') {
+      resultEl.textContent = '0';
+    } else {
+      const v = evaluate(expr);
+      resultEl.textContent = trimNum(v);
+    }
+  } catch(e) {
+    resultEl.textContent = expr === '' ? '0' : '…';
+  }
+}
+
+function showError() {
+  resultEl.textContent = t('error');
+}
+
+function copyResult() {
+  const text = resultEl.textContent;
+  if (!text || text === '0') return;
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(()=>{});
+  }
+  showCopiedToast();
+}
+
+function showCopiedToast() {
+  let toast = document.getElementById('copyToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'copyToast';
+    toast.className = 'copy-toast';
+    document.querySelector('.calc').appendChild(toast);
+  }
+  toast.textContent = t('copied');
+  toast.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=> toast.classList.remove('show'), 1200);
+}
+
+function press(key) {
+  switch(key) {
+    case 'C':
+      expr = '';
+      break;
+    case 'DEL':
+      expr = expr.slice(0, -1);
+      break;
+    case '=':
+      try {
+        const v = evaluate(expr || '0');
+        expr = trimNum(v);
+      } catch(e) {
+        showError();
+        return;
+      }
+      break;
+    case 'INV':
+      inv = !inv;
+      updateFlags();
+      return;
+    case 'M+':
+      try { memory += evaluate(expr || '0'); } catch(e) {}
+      updateFlags();
+      return;
+    case 'MR':
+      expr += trimNum(memory);
+      break;
+    case 'MC':
+      memory = 0;
+      updateFlags();
+      return;
+    case 'sin': case 'cos': case 'tan':
+    case 'ln': case 'log': case 'sqrt':
+    case 'inv1x': case 'fact':
+      applyFn(key);
+      return;
+    default:
+      expr += key;
+  }
+  render();
+}
+
+const UI = {
+  fa: { title: 'ماشین‌حساب مهندسی', legend: 'برای توضیح هر دکمه، آن را نگه دارید', error: 'خطا', copied: 'کپی شد!' },
+  en: { title: 'Engineering Calculator', legend: 'Press and hold any key for a hint', error: 'Error', copied: 'Copied!' },
+  ar: { title: 'آلة حاسبة هندسية', legend: 'اضغط مطوّلًا على أي زر لعرض شرح', error: 'خطأ', copied: 'تم النسخ!' },
+  ru: { title: 'Инженерный калькулятор', legend: 'Удерживайте кнопку для подсказки', error: 'Ошибка', copied: 'Скопировано!' }
+};
+
+const TIPS = {
+  fa: {
+    INV: 'معکوس توابع: sin↔asin، log↔10ˣ، √↔توان۲',
+    sin: 'سینوس زاویه (طبق واحد DEG یا RAD)',
+    cos: 'کسینوس زاویه (طبق واحد DEG یا RAD)',
+    tan: 'تانژانت زاویه (طبق واحد DEG یا RAD)',
+    C: 'پاک کردن کامل صفحه‌نمایش',
+    ln: 'لگاریتم طبیعی (پایه e)',
+    log: 'لگاریتم بر پایه ۱۰',
+    sqrt: 'جذر عدد وارد شده',
+    fact: 'فاکتوریل عدد صحیح وارد شده',
+    DEL: 'حذف آخرین کاراکتر وارد شده',
+    '(': 'شروع پرانتز برای اولویت‌بندی عملیات',
+    ')': 'بستن پرانتز باز شده',
+    'π': 'عدد پی (۳.۱۴۱۵۹...)',
+    e: 'عدد نپر (۲.۷۱۸۲۸...)',
+    '/': 'عملگر تقسیم',
+    '^': 'توان: عدد اول به توان عدد دوم',
+    '*': 'عملگر ضرب',
+    inv1x: 'معکوس عدد (یک تقسیم بر آن)',
+    '-': 'عملگر تفریق',
+    '%': 'تبدیل به درصد (تقسیم بر ۱۰۰)',
+    '+': 'عملگر جمع',
+    'M+': 'افزودن مقدار فعلی به حافظه',
+    MR: 'فراخوانی مقدار ذخیره‌شده در حافظه',
+    MC: 'پاک کردن حافظه',
+    '.': 'ممیز اعشاری',
+    '=': 'محاسبه نتیجه نهایی عبارت'
+  },
+  en: {
+    INV: 'Inverse of functions: sin↔asin, log↔10ˣ, √↔square',
+    sin: 'Sine of the angle (per DEG/RAD mode)',
+    cos: 'Cosine of the angle (per DEG/RAD mode)',
+    tan: 'Tangent of the angle (per DEG/RAD mode)',
+    C: 'Clear the whole screen',
+    ln: 'Natural logarithm (base e)',
+    log: 'Logarithm base 10',
+    sqrt: 'Square root of the number',
+    fact: 'Factorial of the integer entered',
+    DEL: 'Delete the last character',
+    '(': 'Open parenthesis for operation order',
+    ')': 'Close an open parenthesis',
+    'π': 'Pi (3.14159...)',
+    e: "Euler's number (2.71828...)",
+    '/': 'Division operator',
+    '^': 'Power: first number to the power of the second',
+    '*': 'Multiplication operator',
+    inv1x: 'Reciprocal of the number (1 divided by it)',
+    '-': 'Subtraction operator',
+    '%': 'Convert to percent (divide by 100)',
+    '+': 'Addition operator',
+    'M+': 'Add current value to memory',
+    MR: 'Recall value stored in memory',
+    MC: 'Clear memory',
+    '.': 'Decimal point',
+    '=': "Calculate the expression's result"
+  },
+  ar: {
+    INV: 'معكوس الدوال: sin↔asin، log↔10ˣ، √↔تربيع',
+    sin: 'جيب الزاوية (حسب وضع DEG أو RAD)',
+    cos: 'جيب التمام للزاوية (حسب DEG أو RAD)',
+    tan: 'ظل الزاوية (حسب DEG أو RAD)',
+    C: 'مسح الشاشة بالكامل',
+    ln: 'اللوغاريتم الطبيعي (الأساس e)',
+    log: 'اللوغاريتم بالأساس 10',
+    sqrt: 'الجذر التربيعي للعدد',
+    fact: 'مضروب العدد الصحيح المُدخل',
+    DEL: 'حذف آخر رمز مُدخل',
+    '(': 'فتح قوس لترتيب العمليات',
+    ')': 'إغلاق القوس المفتوح',
+    'π': 'العدد باي (3.14159...)',
+    e: 'عدد أويلر (2.71828...)',
+    '/': 'عملية القسمة',
+    '^': 'الأُس: العدد الأول مرفوعًا لقوة الثاني',
+    '*': 'عملية الضرب',
+    inv1x: 'مقلوب العدد (1 مقسومًا عليه)',
+    '-': 'عملية الطرح',
+    '%': 'تحويل إلى نسبة مئوية (قسمة على 100)',
+    '+': 'عملية الجمع',
+    'M+': 'إضافة القيمة الحالية إلى الذاكرة',
+    MR: 'استرجاع القيمة المحفوظة في الذاكرة',
+    MC: 'مسح الذاكرة',
+    '.': 'الفاصلة العشرية',
+    '=': 'حساب نتيجة العبارة النهائية'
+  },
+  ru: {
+    INV: 'Обратные функции: sin↔asin, log↔10ˣ, √↔квадрат',
+    sin: 'Синус угла (в режиме DEG или RAD)',
+    cos: 'Косинус угла (в режиме DEG или RAD)',
+    tan: 'Тангенс угла (в режиме DEG или RAD)',
+    C: 'Полностью очистить экран',
+    ln: 'Натуральный логарифм (основание e)',
+    log: 'Логарифм по основанию 10',
+    sqrt: 'Квадратный корень числа',
+    fact: 'Факториал введённого целого числа',
+    DEL: 'Удалить последний введённый символ',
+    '(': 'Открыть скобку для порядка операций',
+    ')': 'Закрыть открытую скобку',
+    'π': 'Число пи (3.14159...)',
+    e: 'Число Эйлера (2.71828...)',
+    '/': 'Операция деления',
+    '^': 'Степень: первое число в степени второго',
+    '*': 'Операция умножения',
+    inv1x: 'Обратное число (1, делённое на него)',
+    '-': 'Операция вычитания',
+    '%': 'Перевод в проценты (деление на 100)',
+    '+': 'Операция сложения',
+    'M+': 'Добавить текущее значение в память',
+    MR: 'Вызвать значение из памяти',
+    MC: 'Очистить память',
+    '.': 'Десятичная точка',
+    '=': 'Вычислить результат выражения'
+  }
+};
+
+let lang = 'fa';
+const tipEls = {};
+
+function t(key) { return UI[lang][key]; }
+
+function setLang(l) {
+  lang = l;
+  try { localStorage.setItem('calcLang', l); } catch(e) {}
+  document.documentElement.lang = l;
+  document.documentElement.dir = (l === 'ar' || l === 'fa') ? 'rtl' : 'ltr';
+  document.title = UI[l].title;
+  document.getElementById('appTitle').textContent = UI[l].title;
+  document.getElementById('legendText').textContent = UI[l].legend;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.l === l));
+  Object.keys(tipEls).forEach(k => { tipEls[k].textContent = (TIPS[l] && TIPS[l][k]) || ''; });
+  render();
+}
+
+const keys = [
+  {l:'Inv', k:'INV', cls:'fn', d:'معکوس توابع: sin↔asin، log↔10ˣ، √↔توان۲'}, {l:'sin', k:'sin', cls:'fn', d:'سینوس زاویه (طبق واحد DEG یا RAD)'}, {l:'cos', k:'cos', cls:'fn', d:'کسینوس زاویه (طبق واحد DEG یا RAD)'}, {l:'tan', k:'tan', cls:'fn', d:'تانژانت زاویه (طبق واحد DEG یا RAD)'}, {l:'C', k:'C', cls:'op', d:'پاک کردن کامل صفحه‌نمایش'},
+  {l:'ln', k:'ln', cls:'fn', d:'لگاریتم طبیعی (پایه e)'}, {l:'log', k:'log', cls:'fn', d:'لگاریتم بر پایه ۱۰'}, {l:'√', k:'sqrt', cls:'fn', d:'جذر عدد وارد شده'}, {l:'x!', k:'fact', cls:'fn', d:'فاکتوریل عدد صحیح وارد شده'}, {l:'⌫', k:'DEL', cls:'op', d:'حذف آخرین کاراکتر وارد شده'},
+  {l:'(', k:'(', cls:'', d:'شروع پرانتز برای اولویت‌بندی عملیات'}, {l:')', k:')', cls:'', d:'بستن پرانتز باز شده'}, {l:'π', k:'π', cls:'fn', d:'عدد پی (۳.۱۴۱۵۹...)'}, {l:'e', k:'e', cls:'fn', d:'عدد نپر (۲.۷۱۸۲۸...)'}, {l:'÷', k:'/', cls:'op', d:'عملگر تقسیم'},
+  {l:'7', k:'7', cls:''}, {l:'8', k:'8', cls:''}, {l:'9', k:'9', cls:''}, {l:'xʸ', k:'^', cls:'fn', d:'توان: عدد اول به توان عدد دوم'}, {l:'×', k:'*', cls:'op', d:'عملگر ضرب'},
+  {l:'4', k:'4', cls:''}, {l:'5', k:'5', cls:''}, {l:'6', k:'6', cls:''}, {l:'1/x', k:'inv1x', cls:'fn', d:'معکوس عدد (یک تقسیم بر آن)'}, {l:'−', k:'-', cls:'op', d:'عملگر تفریق'},
+  {l:'1', k:'1', cls:''}, {l:'2', k:'2', cls:''}, {l:'3', k:'3', cls:''}, {l:'%', k:'%', cls:'fn', d:'تبدیل به درصد (تقسیم بر ۱۰۰)'}, {l:'+', k:'+', cls:'op', d:'عملگر جمع'},
+  {l:'M+', k:'M+', cls:'fn', d:'افزودن مقدار فعلی به حافظه'}, {l:'MR', k:'MR', cls:'fn', d:'فراخوانی مقدار ذخیره‌شده در حافظه'}, {l:'MC', k:'MC', cls:'fn', d:'پاک کردن حافظه'}, {l:'0', k:'0', cls:''}, {l:'.', k:'.', cls:'', d:'ممیز اعشاری'},
+  {l:'=', k:'=', cls:'eq wide', d:'محاسبه نتیجه نهایی عبارت'}
+];
+
+const pad = document.getElementById('pad');
+let pressTimer = null;
+let longPressed = false;
+
+keys.forEach(item => {
+  const wrap = document.createElement('div');
+  wrap.className = 'key-wrap';
+  if (item.cls && item.cls.includes('wide')) wrap.style.gridColumn = 'span 2';
+
+  const b = document.createElement('button');
+  b.className = 'key ' + item.cls;
+  b.textContent = item.l;
+  b.onclick = () => { if (!longPressed) press(item.k); };
+  wrap.appendChild(b);
+
+  if (item.d) {
+    const tip = document.createElement('div');
+    tip.className = 'tip';
+    tip.textContent = (TIPS[lang] && TIPS[lang][item.k]) || item.d;
+    wrap.appendChild(tip);
+    tipEls[item.k] = tip;
+
+    const start = () => {
+      longPressed = false;
+      pressTimer = setTimeout(() => {
+        longPressed = true;
+        tip.classList.add('show');
+      }, 450);
+    };
+    const end = () => {
+      clearTimeout(pressTimer);
+      tip.classList.remove('show');
+      setTimeout(() => { longPressed = false; }, 50);
+    };
+    b.addEventListener('mousedown', start);
+    b.addEventListener('touchstart', start, {passive:true});
+    b.addEventListener('mouseup', end);
+    b.addEventListener('mouseleave', end);
+    b.addEventListener('touchend', end);
+    b.addEventListener('touchcancel', end);
+  }
+
+  pad.appendChild(wrap);
+});
+
+render();
+updateFlags();
+setLang(localStorage.getItem('calcLang') || 'fa');
+</script>
+</body>
+</html>
